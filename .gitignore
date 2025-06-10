@@ -1,0 +1,34 @@
+# Node modules
+node_modules/
+
+# Environnements et secrets
+.env
+.env.local
+.env.*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# Build output
+dist/
+build/
+out/
+
+# Systèmes d'exploitation
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
+
+# Tests et coverage
+coverage/
+*.lcov
+
+# Autres fichiers temporaires
+*.swp
+*.swo
