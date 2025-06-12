@@ -203,6 +203,17 @@ app.get("/register", (req: Request, res: Response) => {
           }
           .toggle-password:hover { opacity: 1; }
           .error { color: #c0392b; font-size: 0.97em; margin-bottom: -10px; text-align: center; }
+          .error-email {
+  color: #c0392b;
+  font-size: 1em;
+  margin-bottom: 8px;
+  margin-top: 2px;
+  background: #ffeaea;
+  border-radius: 4px;
+  padding: 5px 10px;
+  display: inline-block;
+  font-family: inherit;
+}
           button {
             background: #388e3c;
             color: #fff;
@@ -230,13 +241,13 @@ app.get("/register", (req: Request, res: Response) => {
           function validateForm(e) {
             const pwd = document.getElementById('password').value;
             const confirm = document.getElementById('confirm').value;
-            const error = document.getElementById('error-msg');
+            const pwdError = document.getElementById('password-error');
             if (pwd !== confirm) {
-              error.textContent = "Les mots de passe ne correspondent pas.";
+              pwdError.style.display = "inline-block";
               e.preventDefault();
               return false;
             }
-            error.textContent = "";
+            pwdError.style.display = "none";
             return true;
           }
           function togglePassword(id, iconId) {
@@ -287,6 +298,10 @@ app.get("/register", (req: Request, res: Response) => {
                 <span class="toggle-password" id="eye-confirm" onclick="togglePassword('confirm','eye-confirm')"
                   style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;width:22px;height:22px;opacity:0.7;"></span>
               </div>
+              <div id="password-error" class="error-email" style="display:none;">
+  <span style="font-size:1.1em;vertical-align:middle;">&#9888;</span>
+  <span style="font-weight:500;">Les mots de passe ne correspondent pas.</span>
+</div>
             </div>
             <div id="error-msg" class="error"></div>
             <button type="submit">S'inscrire</button>
@@ -532,21 +547,182 @@ app.post("/crops", (req: Request, res: Response) => {
 });
 
 // Création d'un utilisateur
-app.post("/users", async (req: Request, res: Response) => {
-  const { username, email, password } = req.body;
-  const user = {
-    id: Date.now().toString(),
-    name: username,
-    email: email,
-    password: password,
-  };
+app.post("/users", (req: Request, res: Response) => {
+  (async () => {
+    const { username, email, password } = req.body;
+    const user = {
+      id: Date.now().toString(),
+      name: username,
+      email: email,
+      password: password,
+    };
 
-  try {
-    await userManager.addUser(user);
+    const result = await userManager.addUser(user);
+
+    if (!result.success) {
+      // Affiche la page d'inscription avec le message d'erreur sous le champ email
+      return res.send(`
+        <html>
+          <head>
+            <title>Inscription</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <style>
+              body { font-family: Arial, sans-serif; background: #f7fafc; margin: 0; }
+              .container {
+                max-width: 370px;
+                margin: 60px auto;
+                background: #fff;
+                border-radius: 12px;
+                box-shadow: 0 4px 16px #0002;
+                padding: 36px 32px 28px 32px;
+              }
+              h2 {
+                color: #388e3c;
+                text-align: center;
+                margin-bottom: 28px;
+                font-size: 1.6em;
+                letter-spacing: 1px;
+              }
+              form { display: flex; flex-direction: column; gap: 18px; }
+              .form-group { display: flex; flex-direction: column; align-items: stretch; position: relative; }
+              label { font-weight: 500; margin-bottom: 6px; }
+              input {
+                padding: 8px 38px 8px 10px;
+                border: 1px solid #cfd8dc;
+                border-radius: 5px;
+                font-size: 1em;
+                background: #f7fafc;
+                transition: border 0.2s;
+              }
+              input:focus { border: 1.5px solid #388e3c; outline: none; }
+              .toggle-password {
+                position: absolute;
+                right: 10px;
+                top: 34px;
+                cursor: pointer;
+                width: 22px;
+                height: 22px;
+                opacity: 0.7;
+              }
+              .toggle-password:hover { opacity: 1; }
+              .error { color: #c0392b; font-size: 0.97em; margin-bottom: -10px; text-align: center; }
+              .error-email {
+  color: #c0392b;
+  font-size: 1em;
+  margin-bottom: 8px;
+  margin-top: 2px;
+  background: #ffeaea;
+  border-radius: 4px;
+  padding: 5px 10px;
+  display: inline-block;
+  font-family: inherit;
+}
+              button {
+                background: #388e3c;
+                color: #fff;
+                border: none;
+                padding: 10px 0;
+                border-radius: 5px;
+                font-size: 1.1em;
+                font-weight: bold;
+                cursor: pointer;
+                margin-top: 10px;
+                transition: background 0.2s;
+              }
+              button:hover { background: #256029; }
+              .back-link {
+                display: block;
+                text-align: center;
+                margin-top: 22px;
+                color: #388e3c;
+                text-decoration: none;
+                font-size: 0.98em;
+              }
+              .back-link:hover { text-decoration: underline; }
+            </style>
+            <script>
+              function validateForm(e) {
+                const pwd = document.getElementById('password').value;
+                const confirm = document.getElementById('confirm').value;
+                const pwdError = document.getElementById('password-error');
+                if (pwd !== confirm) {
+                  pwdError.style.display = "inline-block";
+                  e.preventDefault();
+                  return false;
+                }
+                pwdError.style.display = "none";
+                return true;
+              }
+              function togglePassword(id, iconId) {
+                const input = document.getElementById(id);
+                const icon = document.getElementById(iconId);
+                if (input.type === "password") {
+                  input.type = "text";
+                  icon.innerHTML = eyeOpen;
+                } else {
+                  input.type = "password";
+                  icon.innerHTML = eyeClosed;
+                }
+              }
+              const eyeOpen = '<svg fill="none" stroke="#388e3c" stroke-width="2" viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="7" ry="5"/><circle cx="12" cy="12" r="2.5"/></svg>';
+              const eyeClosed = '<svg fill="none" stroke="#388e3c" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12s4-5 9-5 9 5 9 5-4 5-9 5-9-5-9-5z"/><line x1="3" y1="3" x2="21" y2="21"/></svg>';
+              window.addEventListener('DOMContentLoaded', () => {
+                document.getElementById('eye-password').innerHTML = eyeClosed;
+                document.getElementById('eye-confirm').innerHTML = eyeClosed;
+              });
+            </script>
+          </head>
+          <body>
+            <div class="container">
+              <h2>Créer un compte</h2>
+              <form method="POST" action="/users" onsubmit="return validateForm(event)">
+                <div class="form-group">
+                  <label for="username">Nom d'utilisateur</label>
+                  <input id="username" name="username" required autocomplete="username" value="${username}" />
+                </div>
+                <div class="form-group">
+                  <label for="email">Email</label>
+                  <input id="email" name="email" type="email" required autocomplete="email" value="${email}" />
+                  <div class="error-email">
+                    <span style="font-size:1.1em;vertical-align:middle;">&#9888;</span>
+                    <span style="font-weight:500;">Format d'email invalide</span>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="password">Mot de passe</label>
+                  <div style="position:relative;display:flex;align-items:center;">
+                    <input id="password" name="password" type="password" required autocomplete="new-password"
+                      style="padding:8px 38px 8px 10px;border:1px solid #cfd8dc;border-radius:5px;font-size:1em;background:#f7fafc;transition:border 0.2s;width:100%;" />
+                    <span class="toggle-password" id="eye-password" onclick="togglePassword('password','eye-password')"
+                      style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;width:22px;height:22px;opacity:0.7;"></span>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="confirm">Confirmer le mot de passe</label>
+                  <div style="position:relative;display:flex;align-items:center;">
+                    <input id="confirm" name="confirm" type="password" required autocomplete="new-password"
+                      style="padding:8px 38px 8px 10px;border:1px solid #cfd8dc;border-radius:5px;font-size:1em;background:#f7fafc;transition:border 0.2s;width:100%;" />
+                    <span class="toggle-password" id="eye-confirm" onclick="togglePassword('confirm','eye-confirm')"
+                      style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;width:22px;height:22px;opacity:0.7;"></span>
+                  </div>
+                  <div id="password-error" class="error-email" style="display:none;">
+  <span style="font-size:1.1em;vertical-align:middle;">&#9888;</span>
+  <span style="font-weight:500;">Les mots de passe ne correspondent pas.</span>
+</div>
+                </div>
+                <div id="error-msg" class="error"></div>
+                <button type="submit">S'inscrire</button>
+              </form>
+              <a class="back-link" href="/">&#8592; Retour à l'accueil</a>
+            </div>
+          </body>
+        </html>
+      `);
+    }
+
+    // Si tout va bien, redirige vers l'accueil
     res.redirect("/");
-  } catch (err: any) {
-    res.send("Erreur: " + err.message);
-  }
+  })();
 });
 
 // Connexion utilisateur
@@ -557,7 +733,133 @@ app.post("/login", async (req: Request, res: Response) => {
     req.session.user = { username: user.name };
     res.redirect("/");
   } else {
-    res.send("Identifiants invalides");
+    // Affiche le formulaire avec le message d'erreur sous le formulaire
+    res.send(`
+      <html>
+        <head>
+          <title>Connexion</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <style>
+            body { font-family: Arial, sans-serif; background: #f7fafc; margin: 0; }
+            .container {
+              max-width: 370px;
+              margin: 60px auto;
+              background: #fff;
+              border-radius: 12px;
+              box-shadow: 0 4px 16px #0002;
+              padding: 36px 32px 28px 32px;
+            }
+            h2 {
+              color: #388e3c;
+              text-align: center;
+              margin-bottom: 28px;
+              font-size: 1.6em;
+              letter-spacing: 1px;
+            }
+            form { display: flex; flex-direction: column; gap: 18px; }
+            .form-group { display: flex; flex-direction: column; align-items: stretch; position: relative; }
+            label { font-weight: 500; margin-bottom: 6px; }
+            input {
+              padding: 8px 10px;
+              border: 1px solid #cfd8dc;
+              border-radius: 5px;
+              font-size: 1em;
+              background: #f7fafc;
+              transition: border 0.2s;
+            }
+            input:focus { border: 1.5px solid #388e3c; outline: none; }
+            .toggle-password {
+              position: absolute;
+              right: 10px;
+              top: 34px;
+              cursor: pointer;
+              width: 22px;
+              height: 22px;
+              opacity: 0.7;
+            }
+            .toggle-password:hover { opacity: 1; }
+            .error-login {
+              color: #c0392b;
+              font-size: 1em;
+              margin-bottom: 8px;
+              margin-top: 2px;
+              background: #ffeaea;
+              border-radius: 4px;
+              padding: 5px 10px;
+              display: inline-block;
+              font-family: inherit;
+              text-align: center;
+            }
+            button {
+              background: #388e3c;
+              color: #fff;
+              border: none;
+              padding: 10px 0;
+              border-radius: 5px;
+              font-size: 1.1em;
+              font-weight: bold;
+              cursor: pointer;
+              margin-top: 10px;
+              transition: background 0.2s;
+            }
+            button:hover { background: #256029; }
+            .back-link {
+              display: block;
+              text-align: center;
+              margin-top: 22px;
+              color: #388e3c;
+              text-decoration: none;
+              font-size: 0.98em;
+            }
+            .back-link:hover { text-decoration: underline; }
+          </style>
+          <script>
+            function togglePassword(id, iconId) {
+              const input = document.getElementById(id);
+              const icon = document.getElementById(iconId);
+              if (input.type === "password") {
+                input.type = "text";
+                icon.innerHTML = eyeOpen;
+              } else {
+                input.type = "password";
+                icon.innerHTML = eyeClosed;
+              }
+            }
+            const eyeOpen = '<svg fill="none" stroke="#388e3c" stroke-width="2" viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="7" ry="5"/><circle cx="12" cy="12" r="2.5"/></svg>';
+            const eyeClosed = '<svg fill="none" stroke="#388e3c" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12s4-5 9-5 9 5 9 5-4 5-9 5-9-5-9-5z"/><line x1="3" y1="3" x2="21" y2="21"/></svg>';
+            window.addEventListener('DOMContentLoaded', () => {
+              document.getElementById('eye-login').innerHTML = eyeClosed;
+            });
+          </script>
+        </head>
+        <body>
+          <div class="container">
+            <h2>Connexion</h2>
+            <form method="POST" action="/login" style="display:flex;flex-direction:column;gap:18px;">
+              <div class="form-group">
+                <label for="email">Email</label>
+                <input id="email" name="email" type="email" required autocomplete="email" />
+              </div>
+              <div class="form-group">
+                <label for="password">Mot de passe</label>
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <input id="password" name="password" type="password" required autocomplete="current-password"
+                    style="padding:8px 10px;border:1px solid #cfd8dc;border-radius:5px;font-size:1em;background:#f7fafc;transition:border 0.2s;width:100%;" />
+                  <span class="toggle-password" id="eye-login" onclick="togglePassword('password','eye-login')"
+                    style="cursor:pointer;width:22px;height:22px;opacity:0.7;display:flex;align-items:center;"></span>
+                </div>
+              </div>
+              <div class="error-login">
+                <span style="font-size:1.1em;vertical-align:middle;">&#9888;</span>
+                Identifiant ou mot de passe invalide.
+              </div>
+              <button type="submit">Se connecter</button>
+            </form>
+            <a class="back-link" href="/register">&#8592; Créer un compte</a>
+          </div>
+        </body>
+      </html>
+    `);
   }
 });
 
