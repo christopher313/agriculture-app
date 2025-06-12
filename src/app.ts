@@ -13,6 +13,7 @@ import UserManager from "./modules/users/users";
 declare module "express-session" {
   interface SessionData {
     user?: { username: string };
+    flash?: { module: string; message: string; values?: any };
   }
 }
 
@@ -27,12 +28,20 @@ app.use(
   })
 );
 
-// Instanciation des gestionnaires
+// Instanciation des gestionnaires (une seule fois)
 const cropManager = new CropManager();
 const livestockManager = new LivestockManager();
 const equipmentManager = new EquipmentManager();
 const weatherService = new WeatherService(process.env.WEATHER_API_KEY || "");
 const userManager = new UserManager();
+const financeManager = new FinanceManager();
+
+// Middleware flash
+app.use((req, res, next) => {
+  res.locals.flash = req.session.flash;
+  delete req.session.flash;
+  next();
+});
 
 // Page d'accueil
 app.get("/", (req: Request, res: Response) => {
@@ -61,6 +70,16 @@ app.get("/", (req: Request, res: Response) => {
           input { padding: 6px; margin-bottom: 12px; width: 100%; max-width: 300px; }
           button { background: #388e3c; color: #fff; border: none; padding: 8px 18px; border-radius: 4px; cursor: pointer; }
           button:hover { background: #256029; }
+          .success-flash {
+  color: #256029;
+  background: #e8f5e9;
+  border: 1.5px solid #388e3c;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-bottom: 14px;
+  font-size: 1em;
+  display: inline-block;
+}
         </style>
       </head>
       <body>
@@ -73,6 +92,7 @@ app.get("/", (req: Request, res: Response) => {
             <li><a href="/livestock">Voir les animaux</a></li>
             <li><a href="/equipment">Voir le matériel</a></li>
             <li><a href="/weather">Voir la météo</a></li>
+            <li><a href="/finance">Voir la finance</a></li>
             ${user ? '<li><a href="/logout">Déconnexion</a></li>' : ""}
           </ul>
         </nav>
@@ -83,28 +103,120 @@ app.get("/", (req: Request, res: Response) => {
           <p>Connecté en tant que <b>${user.username}</b></p>
           <section>
             <h2>Ajouter un animal</h2>
+            ${
+              res.locals.flash && res.locals.flash.module === "livestock"
+                ? `<div class="success-flash">
+            <span style="font-size:1.1em;vertical-align:middle;">&#10003;</span>
+            <span style="font-weight:500;">${res.locals.flash.message}</span>
+          </div>`
+                : ""
+            }
             <form method="POST" action="/livestock">
-              <label>Type: <input name="type" required /></label>
-              <label>Nom: <input name="name" required /></label>
+              <label>Type: <input name="type" required value="${
+                res.locals.flash &&
+                res.locals.flash.module === "livestock" &&
+                res.locals.flash.values
+                  ? res.locals.flash.values.type
+                  : ""
+              }" /></label>
+              <label>Nom: <input name="name" required value="${
+                res.locals.flash &&
+                res.locals.flash.module === "livestock" &&
+                res.locals.flash.values
+                  ? res.locals.flash.values.name
+                  : ""
+              }" /></label>
               <button type="submit">Ajouter</button>
             </form>
           </section>
           <section>
             <h2>Ajouter une culture</h2>
+            ${
+              res.locals.flash && res.locals.flash.module === "crops"
+                ? `<div class="success-flash">
+            <span style="font-size:1.1em;vertical-align:middle;">&#10003;</span>
+            <span style="font-weight:500;">${res.locals.flash.message}</span>
+          </div>`
+                : ""
+            }
             <form method="POST" action="/crops">
-              <label>Nom: <input name="name" required /></label>
-              <label>Type: <input name="type" required /></label>
+              <label>Nom: <input name="name" required value="${
+                res.locals.flash &&
+                res.locals.flash.module === "crops" &&
+                res.locals.flash.values
+                  ? res.locals.flash.values.name
+                  : ""
+              }" /></label>
+              <label>Type: <input name="type" required value="${
+                res.locals.flash &&
+                res.locals.flash.module === "crops" &&
+                res.locals.flash.values
+                  ? res.locals.flash.values.type
+                  : ""
+              }" /></label>
               <button type="submit">Ajouter</button>
             </form>
           </section>
           <section>
             <h2>Ajouter un équipement</h2>
+            ${
+              res.locals.flash && res.locals.flash.module === "equipment"
+                ? `<div class="success-flash">
+            <span style="font-size:1.1em;vertical-align:middle;">&#10003;</span>
+            <span style="font-weight:500;">${res.locals.flash.message}</span>
+          </div>`
+                : ""
+            }
             <form method="POST" action="/equipment">
-              <label>Nom: <input name="name" required /></label>
-              <label>Type: <input name="type" required /></label>
+              <label>Nom: <input name="name" required value="${
+                res.locals.flash &&
+                res.locals.flash.module === "equipment" &&
+                res.locals.flash.values
+                  ? res.locals.flash.values.name
+                  : ""
+              }" /></label>
+              <label>Type: <input name="type" required value="${
+                res.locals.flash &&
+                res.locals.flash.module === "equipment" &&
+                res.locals.flash.values
+                  ? res.locals.flash.values.type
+                  : ""
+              }" /></label>
               <button type="submit">Ajouter</button>
             </form>
           </section>
+          <section>
+  <h2>Ajouter une opération financière</h2>
+  ${
+    res.locals.flash && res.locals.flash.module === "finance"
+      ? `<div class="success-flash">
+          <span style="font-size:1.1em;vertical-align:middle;">&#10003;</span>
+          <span style="font-weight:500;">${res.locals.flash.message}</span>
+        </div>`
+      : ""
+  }
+  <form method="POST" action="/finance">
+    <label>Type: 
+      <input name="type" required value="${
+        res.locals.flash &&
+        res.locals.flash.module === "finance" &&
+        res.locals.flash.values
+          ? res.locals.flash.values.type
+          : ""
+      }" />
+    </label>
+    <label>Montant: 
+      <input name="amount" type="number" step="0.01" required value="${
+        res.locals.flash &&
+        res.locals.flash.module === "finance" &&
+        res.locals.flash.values
+          ? res.locals.flash.values.amount
+          : ""
+      }" />
+    </label>
+    <button type="submit">Ajouter</button>
+  </form>
+</section>
           `
               : `
           <section>
@@ -508,18 +620,39 @@ app.get("/weather", async (req: Request, res: Response) => {
 // Ajout d'un animal
 app.post("/livestock", (req: Request, res: Response) => {
   const { type, name } = req.body;
+  if (!type || !name) {
+    req.session.flash = {
+      module: "livestock",
+      message: "Veuillez remplir tous les champs.",
+      values: { type, name },
+    };
+    return res.redirect("/");
+  }
   const animal = {
     id: Date.now().toString(),
     type,
     name,
   };
   livestockManager.addLivestock(animal);
-  res.redirect("/livestock");
+  req.session.flash = {
+    module: "livestock",
+    message: "Animal ajouté avec succès !",
+  };
+  res.redirect("/");
 });
 
-// Ajout d'un équipement
 app.post("/equipment", (req: Request, res: Response) => {
   const { name, type } = req.body;
+  if (!name || !type) {
+    // Affiche le formulaire avec les valeurs déjà saisies et un message d'erreur
+    req.session.flash = {
+      module: "equipment",
+      message: "Veuillez remplir tous les champs.",
+      values: { name, type },
+    };
+    return res.redirect("/");
+  }
+  // ...ajout normal...
   const equipment = {
     id: Date.now().toString(),
     name,
@@ -529,21 +662,37 @@ app.post("/equipment", (req: Request, res: Response) => {
     maintenanceSchedule: [] as Date[],
   };
   equipmentManager.addEquipment(equipment);
-  res.redirect("/equipment");
+  req.session.flash = {
+    module: "equipment",
+    message: "Équipement ajouté avec succès !",
+  };
+  res.redirect("/");
 });
 
-// Ajout d'une culture
 app.post("/crops", (req: Request, res: Response) => {
-  const { name, variety, area, yield: cropYield } = req.body;
+  const { name, type } = req.body;
+  if (!name || !type) {
+    req.session.flash = {
+      module: "crops",
+      message: "Veuillez remplir tous les champs.",
+      values: { name, type },
+    };
+    return res.redirect("/");
+  }
   const crop = {
     id: Date.now(),
     name: name as string,
-    variety: variety as string,
-    area: Number(area) || 0,
-    yield: Number(cropYield) || 0,
+    type: type as string,
+    variety: "", // valeur par défaut, à adapter selon votre logique
+    area: 0, // valeur par défaut, à adapter selon votre logique
+    yield: 0, // valeur par défaut, à adapter selon votre logique
   };
   cropManager.addCrop(crop);
-  res.redirect("/crops");
+  req.session.flash = {
+    module: "crops",
+    message: "Culture ajoutée avec succès !",
+  };
+  res.redirect("/");
 });
 
 // Création d'un utilisateur
@@ -872,7 +1021,9 @@ app.get("/logout", (req: Request, res: Response) => {
 
 // Données financières
 app.get("/finance", (req: Request, res: Response) => {
-  const financeManager = new FinanceManager();
+  if (!req.session.user) {
+    return res.redirect("/");
+  }
   const data = financeManager.getFinancialData();
   res.send(`
     <html>
@@ -925,6 +1076,30 @@ app.get("/finance", (req: Request, res: Response) => {
       </body>
     </html>
   `);
+});
+
+// Ajout d'une opération financière
+app.post("/finance", (req: Request, res: Response) => {
+  const { type, amount } = req.body;
+  if (!type || !amount || isNaN(Number(amount))) {
+    req.session.flash = {
+      module: "finance",
+      message: "Veuillez remplir tous les champs correctement.",
+      values: { type, amount },
+    };
+    return res.redirect("/");
+  }
+  const record = {
+    id: Date.now().toString(),
+    type,
+    amount: Number(amount),
+  };
+  financeManager.addRecord(record);
+  req.session.flash = {
+    module: "finance",
+    message: "Opération financière ajoutée avec succès !",
+  };
+  res.redirect("/");
 });
 
 // Démarrage du serveur
